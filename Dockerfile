@@ -9,9 +9,11 @@ RUN apk add --no-cache \
     autoconf g++ make linux-headers
 
 # PHP extensions
-RUN docker-php-ext-configure gd --with-jpeg \
- && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip gd pcntl bcmath
-RUN pecl install redis && docker-php-ext-enable redis
+RUN apk add --no-cache --virtual .build-deps autoconf g++ make \
+ && docker-php-ext-configure gd --with-jpeg \
+ && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip gd pcntl bcmath \
+ && pecl install redis && docker-php-ext-enable redis \
+ && apk del .build-deps
 
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
