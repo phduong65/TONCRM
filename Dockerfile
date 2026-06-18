@@ -5,7 +5,8 @@ RUN apk add --no-cache \
     nginx supervisor bash curl gettext \
     libpng-dev libjpeg-turbo-dev libzip-dev \
     zip unzip oniguruma-dev postgresql-dev \
-    nodejs npm
+    nodejs npm \
+    autoconf g++ make linux-headers
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-jpeg \
