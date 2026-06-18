@@ -1,0 +1,50 @@
+events {
+    worker_connections 1024;
+}
+
+http {
+    include      /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile     on;
+
+    # Trust Railway's proxy
+    set_real_ip_from 0.0.0.0/0;
+    real_ip_header   X-Forwarded-For;
+
+    server {
+        listen ${PORT} default_server;
+        root  /var/www/html/public;
+        index index.php;
+
+        client_max_body_size 50M;
+
+        # WebSocket proxy → internal Reverb on 8080
+        location ~ ^/app/ {
+            proxy_pass         http://127.0.0.1:8080;
+            proxy_http_version 1.1;
+            proxy_set_header   Upgrade    $http_upgrade;
+            proxy_set_header   Connection "Upgrade";
+            proxy_set_header   Host       $host;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+            proxy_buffering    off;
+        }
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
+            fastcgi_pass            127.0.0.1:9000;
+            fastcgi_index           index.php;
+            include                 fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_param PATH_INFO       $fastcgi_path_info;
+        }
+
+        location ~ /\.(?!well-known).* {
+            deny all;
+        }
+    }
+}

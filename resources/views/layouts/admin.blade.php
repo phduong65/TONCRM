@@ -20,10 +20,20 @@
 
     @stack('modals')
 
+    @php
+        // Derive client-side WebSocket vars from APP_URL so Railway (HTTPS) works automatically.
+        // Server-side Reverb config (REVERB_HOST/PORT) stays as-is for internal broadcasting.
+        $appUrl      = config('app.url', 'http://localhost:8000');
+        $isHttps     = str_starts_with($appUrl, 'https://');
+        $wsHost      = parse_url($appUrl, PHP_URL_HOST) ?? 'localhost';
+        $wsPort      = $isHttps ? 443 : (int) config('reverb.apps.apps.0.options.port', 8080);
+        $wsScheme    = $isHttps ? 'https' : 'http';
+    @endphp
     <script>
         window.TENANT_ID      = '{{ auth()->user()->tenant_id }}';
-        window.REVERB_HOST    = '{{ config('reverb.apps.apps.0.options.host', 'localhost') }}';
-        window.REVERB_PORT    = {{ config('reverb.apps.apps.0.options.port', 8080) }};
+        window.REVERB_HOST    = '{{ $wsHost }}';
+        window.REVERB_PORT    = {{ $wsPort }};
+        window.REVERB_SCHEME  = '{{ $wsScheme }}';
         window.REVERB_APP_KEY = '{{ config('reverb.apps.apps.0.key', '') }}';
     </script>
     @stack('scripts')
