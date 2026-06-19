@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('messages', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('conversation_id')->constrained()->onDelete('cascade');
             $table->string('sender_type'); // customer, staff, ai_agent
             $table->string('sender_id');

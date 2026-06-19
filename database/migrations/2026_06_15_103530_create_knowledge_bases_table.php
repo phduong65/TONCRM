@@ -12,25 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('knowledge_bases', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(\DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained()->onDelete('cascade');
             $table->string('title')->nullable();
             $table->text('content');
+            $table->string('pinecone_id')->nullable();
             $table->string('source_url')->nullable();
             $table->string('source_type')->default('manual'); // manual, url, file
             $table->timestamps();
 
             $table->index('tenant_id');
+            $table->fullText('content');
         });
-
-        // Thêm vector column chỉ khi PostgreSQL + pgvector đã cài
-        if (\DB::getDriverName() === 'pgsql') {
-            $vectorInstalled = \DB::selectOne("SELECT 1 FROM pg_available_extensions WHERE name = 'vector' AND installed_version IS NOT NULL");
-            if ($vectorInstalled) {
-                \DB::statement('ALTER TABLE knowledge_bases ADD COLUMN IF NOT EXISTS embedding vector(1536)');
-                \DB::statement('CREATE INDEX IF NOT EXISTS kb_embedding_idx ON knowledge_bases USING ivfflat (embedding vector_cosine_ops)');
-            }
-        }
     }
 
     /**

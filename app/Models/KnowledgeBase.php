@@ -13,7 +13,7 @@ class KnowledgeBase extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'tenant_id', 'title', 'content', 'source_url', 'source_type',
+        'tenant_id', 'title', 'content', 'pinecone_id', 'source_url', 'source_type',
     ];
 
     const SOURCE_TYPES = ['manual', 'url', 'file'];

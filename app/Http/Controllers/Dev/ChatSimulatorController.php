@@ -9,81 +9,67 @@ use App\Models\Contact;
 use App\Models\Conversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ChatSimulatorController extends Controller
 {
     public function index(): View
     {
-        $channel = Channel::where('tenant_id', auth()->user()->tenant_id)
-            ->where('platform', 'webchat')
+        $channels = Channel::where('tenant_id', auth()->user()->tenant_id)
             ->where('is_active', true)
-            ->first();
+            ->orderBy('platform')
+            ->get();
 
-        $conversation = null;
-        $messages     = collect();
-
-        if ($channel) {
-            $conversation = Conversation::where('tenant_id', auth()->user()->tenant_id)
-                ->where('channel_id', $channel->id)
-                ->latest('last_message_at')
-                ->first();
-
-            if ($conversation) {
-                $messages = $conversation->messages()->orderBy('created_at')->get();
-            }
-        }
-
-        return view('dev.chat-simulator', compact('channel', 'conversation', 'messages'));
+        return view('dev.chat', compact('channels'));
     }
 
     public function send(Request $request): JsonResponse
     {
         $request->validate([
-            'content'       => ['required', 'string', 'max:2000'],
-            'customer_name' => ['nullable', 'string', 'max:100'],
-            'customer_id'   => ['nullable', 'string', 'max:100'],
+            'channel_id'  => ['required', 'uuid', 'exists:channels,id'],
+            'sender_name' => ['required', 'string', 'max:100'],
+            'content'     => ['required', 'string', 'max:2000'],
         ]);
 
-        $channel = Channel::where('tenant_id', auth()->user()->tenant_id)
-            ->where('platform', 'webchat')
+        $channel = Channel::where('id', $request->channel_id)
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('is_active', true)
             ->firstOrFail();
 
-        $customerId   = $request->input('customer_id') ?: ('dev-' . Str::slug($request->input('customer_name', 'khach-demo')));
-        $customerName = $request->input('customer_name', 'Khách Demo');
+        // Deterministic sender ID per name+platform — conversations persist across sends
+        $senderId = 'sim_' . substr(md5($request->sender_name . $channel->platform), 0, 12);
 
-        // Run synchronously so testing works without Horizon
+        // dispatchSync = chạy ngay, không qua queue — phù hợp cho dev/test
         ProcessWebhookJob::dispatchSync(
             payload: [
-                'sender_id'   => $customerId,
-                'sender_name' => $customerName,
+                'sender_id'   => $senderId,
+                'sender_name' => $request->sender_name,
                 'type'        => 'text',
                 'content'     => $request->content,
             ],
-            platform:  'webchat',
+            platform:  $channel->platform,
             channelId: $channel->platform_channel_id,
         );
 
-        // Find the conversation to return its ID for Echo subscription
-        $contact = Contact::where('tenant_id', auth()->user()->tenant_id)
-            ->whereJsonContains('platform_ids->webchat', $customerId)
+        $contact = Contact::where('tenant_id', $channel->tenant_id)
+            ->where('platform_ids->' . $channel->platform, $senderId)
             ->first();
 
-        $conversationId = null;
-        if ($contact) {
-            $conv = Conversation::where('channel_id', $channel->id)
+        $conversation = $contact
+            ? Conversation::where('channel_id', $channel->id)
                 ->where('contact_id', $contact->id)
                 ->latest()
-                ->first();
-            $conversationId = $conv?->id;
-        }
+                ->first()
+            : null;
 
         return response()->json([
-            'ok'              => true,
-            'conversation_id' => $conversationId,
-            'sender_id'       => $customerId,
+            'ok'               => true,
+            'conversation_id'  => $conversation?->id,
+            'conversation_url' => $conversation ? route('conversations.show', $conversation->id) : null,
+            'contact_name'     => $contact?->display_name ?? $request->sender_name,
+            'channel_name'     => $channel->name,
+            'platform'         => $channel->platform,
+            'sent_at'          => now()->format('H:i:s'),
         ]);
     }
 }

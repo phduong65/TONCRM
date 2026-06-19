@@ -11,7 +11,11 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+// Broadcasting auth (private channels — Pusher)
+Broadcast::routes(['middleware' => ['auth']]);
 
 // Auth
 Route::middleware('guest')->group(function () {

@@ -35,4 +35,29 @@ return [
         ],
     ],
 
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+    ],
+
+    'pinecone' => [
+        'key'  => env('PINECONE_API_KEY'),
+        'host' => env('PINECONE_HOST'),
+    ],
+
+    'facebook' => [
+        'app_id'       => env('FACEBOOK_APP_ID'),
+        'app_secret'   => env('FACEBOOK_APP_SECRET'),
+        'verify_token' => env('FACEBOOK_VERIFY_TOKEN'),
+    ],
+
+    'zalo' => [
+        'app_id'     => env('ZALO_APP_ID'),
+        'app_secret' => env('ZALO_APP_SECRET'),
+    ],
+
+    'pusher_beams' => [
+        'instance_id' => env('PUSHER_BEAMS_INSTANCE_ID'),
+        'secret_key'  => env('PUSHER_BEAMS_SECRET_KEY'),
+    ],
+
 ];

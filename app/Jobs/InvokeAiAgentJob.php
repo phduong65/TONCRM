@@ -7,7 +7,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Services\AiAgentService;
 use App\Services\FacebookService;
-use App\Services\TikTokService;
+use App\Services\InstagramService;
 use App\Services\ZaloService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -29,10 +29,10 @@ class InvokeAiAgentJob implements ShouldQueue
 
         $channel = $this->conversation->channel;
         $service = match($channel->platform) {
-            'facebook' => app(FacebookService::class),
-            'zalo'     => app(ZaloService::class),
-            'tiktok'   => app(TikTokService::class),
-            default    => null,
+            'facebook'  => app(FacebookService::class),
+            'instagram' => app(InstagramService::class),
+            'zalo'      => app(ZaloService::class),
+            default     => null,
         };
 
         $service?->sendMessage($channel, $this->conversation->contact, $response);

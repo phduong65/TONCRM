@@ -20,22 +20,30 @@
 
     @stack('modals')
 
-    @php
-        // Derive client-side WebSocket vars from APP_URL so Railway (HTTPS) works automatically.
-        // Server-side Reverb config (REVERB_HOST/PORT) stays as-is for internal broadcasting.
-        $appUrl      = config('app.url', 'http://localhost:8000');
-        $isHttps     = str_starts_with($appUrl, 'https://');
-        $wsHost      = parse_url($appUrl, PHP_URL_HOST) ?? 'localhost';
-        $wsPort      = $isHttps ? 443 : (int) config('reverb.apps.apps.0.options.port', 8080);
-        $wsScheme    = $isHttps ? 'https' : 'http';
-    @endphp
     <script>
-        window.TENANT_ID      = '{{ auth()->user()->tenant_id }}';
-        window.REVERB_HOST    = '{{ $wsHost }}';
-        window.REVERB_PORT    = {{ $wsPort }};
-        window.REVERB_SCHEME  = '{{ $wsScheme }}';
-        window.REVERB_APP_KEY = '{{ config('reverb.apps.apps.0.key', '') }}';
+        window.TENANT_ID = '{{ auth()->user()->tenant_id }}';
     </script>
+
+    @if(config('services.pusher_beams.instance_id'))
+    <script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
+    <script>
+    (function () {
+        if (typeof PusherPushNotifications === 'undefined') return;
+
+        const beamsClient = new PusherPushNotifications.Client({
+            instanceId: '{{ config('services.pusher_beams.instance_id') }}',
+        });
+
+        beamsClient.start()
+            .then(() => beamsClient.addDeviceInterest('tenant-' + window.TENANT_ID))
+            .catch(function (err) {
+                // Silently ignore — Beams requires HTTPS + granted permission
+                // Will work on production (HTTPS). No action needed on HTTP local dev.
+            });
+    })();
+    </script>
+    @endif
+
     @stack('scripts')
 </body>
 </html>

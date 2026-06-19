@@ -8,6 +8,7 @@ $activeModule = match(true) {
     str_starts_with($routeName, 'reports')         => 'reports',
     str_starts_with($routeName, 'settings')        => 'settings',
     str_starts_with($routeName, 'dashboard')       => 'dashboard',
+    str_starts_with($routeName, 'dev')             => 'dev',
     default => 'dashboard',
 };
 @endphp
@@ -159,7 +160,7 @@ $activeModule = match(true) {
         @if(config('app.debug'))
         <div class="relative group w-full flex justify-center">
             <a href="{{ route('dev.chat') }}"
-               class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 text-amber-500 hover:bg-amber-500/10"
+               class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 {{ $activeModule === 'dev' ? 'bg-amber-500/20 text-amber-400' : 'text-amber-500 hover:bg-amber-500/10' }}"
                title="Chat Simulator (Dev)">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>

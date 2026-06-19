@@ -7,6 +7,7 @@ use App\Models\Channel;
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\BeamsService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -69,8 +70,15 @@ class ProcessWebhookJob implements ShouldQueue
 
         event(new MessageReceived($message->load('conversation')));
 
+        app(BeamsService::class)->notifyTenant(
+            tenantId: $channel->tenant_id,
+            title:    'Tin nhắn mới — ' . ($contact->display_name ?? 'Khách hàng'),
+            body:     mb_substr($message->content, 0, 100),
+            path:     '/conversations/' . $conversation->id,
+        );
+
         if ($conversation->is_ai_active) {
-            dispatch(new InvokeAiAgentJob($conversation))->onQueue('ai');
+            dispatch(new InvokeAiAgentJob($conversation));
         }
     }
 }
